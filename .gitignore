@@ -1,0 +1,15 @@
+# OS が自動で作るファイル
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# エディタの設定と一時ファイル
+.vscode/
+.idea/
+*.swp
+*~
+*.bak
+*.tmp
+
+# Claude Code の個人設定
+.claude/settings.local.json
