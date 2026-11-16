@@ -330,7 +330,7 @@ noscript {
 }
 
 .page-title {
-  margin: 0;
+  margin: 0 0 12px;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--border);
   font-size: 1.9em;
@@ -339,6 +339,7 @@ noscript {
 }
 
 .page-title.has-tabs {
+  margin-bottom: 0;
   border-bottom: 0;
   padding-bottom: 0;
 }
@@ -347,6 +348,7 @@ noscript {
   display: flex;
   flex-wrap: wrap;
   gap: 0 4px;
+  margin-bottom: 12px;
   border-bottom: 1px solid var(--border);
   font-size: 13.5px;
 }
@@ -362,12 +364,17 @@ noscript {
   border-bottom-color: var(--text);
 }
 
+.page-actions {
+  display: flex;
+  margin-left: auto;
+}
+
 .page-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
-  margin: 8px 0 18px;
+  margin: -2px 0 18px;
   color: var(--text-sub);
   font-size: 12.5px;
 }

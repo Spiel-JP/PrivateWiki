@@ -10,8 +10,12 @@
  */
 window.WIKI = {
   title: "PrivateWiki",
-  tagline: "個人用ゲームメモ",
-  footer: "個人用のメモです。内容の正確性は保証しません。各ゲームの名称等の権利は各権利者に帰属します。",
+  tagline: "ゲームメモ",
+  footer: "有志が編集しているメモです。内容の正確性は保証しません。各ゲームの名称等の権利は各権利者に帰属します。",
+
+  // GitHub のリポジトリ。各ページの「編集」「履歴」リンクの行き先になる
+  repo: "Spiel-JP/PrivateWiki",
+  branch: "main",
 
   // ゲームに属さないページ（ルート直下）
   site: [{ file: "help.html", title: "記法ガイド", updated: "2026-11-16" }],

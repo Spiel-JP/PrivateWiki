@@ -758,13 +758,33 @@
     return bc;
   }
 
+  // GitHub 上の編集画面と変更履歴へのリンク（pages.js に repo があるときだけ出す）
+  function buildActions() {
+    if (!W.repo || !rel) return null;
+    const path = rel.split("/").map(encodeURIComponent).join("/");
+    const link = (label, kind, title) =>
+      h(
+        "a",
+        { href: `https://github.com/${W.repo}/${kind}/${W.branch || "main"}/${path}`, target: "_blank", rel: "noopener", title },
+        label,
+      );
+    return h(
+      "span",
+      { class: "page-actions" },
+      link("編集", "edit", "GitHub でこのページを編集する"),
+      link("履歴", "commits", "このページの変更履歴を見る"),
+    );
+  }
+
   function buildTabs() {
     const list = curGame ? pagesOf(curGame) : [];
-    if (list.length < 2) return null;
+    const actions = buildActions();
+    if (list.length < 2 && !actions) return null;
     return h(
       "nav",
-      { class: "page-tabs", "aria-label": `${curGame.title} のページ` },
-      list.map((p) => (p === cur ? h("strong", null, p.title) : h("a", { href: url(p) }, p.title))),
+      { class: "page-tabs", "aria-label": curGame ? `${curGame.title} のページ` : "ページの操作" },
+      list.length < 2 ? null : list.map((p) => (p === cur ? h("strong", null, p.title) : h("a", { href: url(p) }, p.title))),
+      actions,
     );
   }
 
