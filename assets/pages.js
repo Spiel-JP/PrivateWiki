@@ -18,7 +18,7 @@ window.WIKI = {
   branch: "main",
 
   // ゲームに属さないページ（ルート直下）
-  site: [{ file: "help.html", title: "記法ガイド", updated: "2026-11-16" }],
+  site: [{ file: "help.html", title: "記法ガイド", updated: "2026-11-17" }],
 
   games: [
     {
@@ -29,7 +29,8 @@ window.WIKI = {
       summary: "集落を建てて伯爵領まるごとを育てる、中世の街づくりゲーム。",
       pages: [
         { file: "index.html", title: "概要", updated: "2026-11-16" },
-        { file: "memo.html", title: "プレイメモ", updated: "2026-11-16" },
+        { file: "chains.html", title: "生産チェーン", updated: "2026-11-17" },
+        { file: "memo.html", title: "プレイメモ", updated: "2026-11-17" },
         { file: "todo.html", title: "やること", updated: "2026-11-16" },
       ],
     },

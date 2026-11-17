@@ -203,16 +203,138 @@
     return html + "</tbody></table>";
   }
 
+  /* 生産チェーン（:::chain）
+   *
+   * 1行にひとつの流れを「材料 + 材料 → 建物: 産物, 産物 → 建物: 産物」の形で書く。
+   * 行どうしは品物の名前でつながり、最終産物を作る建物を右端に置いた図になる。
+   * 品物の後ろに数字を書くと、その建物の生産数・消費数として表示する。
+   */
+  const chainSteps = []; // ページ内の全工程。逆引きの表（:::chainindex）に使う
+
+  function parseGoods(text) {
+    const t = text.trim();
+    const m = /^(.+?)(?:\s+|\s*[×x]\s*)(\d+(?:\.\d+)?)$/.exec(t); // 「木材 2」「木材×2」
+    return m ? { name: m[1].trim(), qty: m[2] } : { name: t, qty: "" };
+  }
+
+  function mergeGoods(list, item) {
+    const same = list.find((x) => x.name === item.name);
+    if (!same) list.push({ ...item });
+    else if (!same.qty) same.qty = item.qty;
+  }
+
+  function parseChain(rows) {
+    const steps = [];
+    for (const row of rows) {
+      // 全角の記号や数字でも書けるようにそろえる
+      const line = row
+        .replace(/[０-９．]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+        .replace(/->|=>|⇒|➡|➔/g, "→")
+        .replace(/：/g, ":")
+        .replace(/＋/g, "+")
+        .replace(/／/g, "/")
+        .replace(/[、，]/g, ",")
+        .replace(/　/g, " ");
+
+      let carry = null; // 次の建物に入る品物
+      for (const seg of line.split("→").map((s) => s.trim())) {
+        if (!seg) continue;
+        const colon = seg.indexOf(":");
+        if (colon < 0) {
+          carry = seg.split("+").map(parseGoods).filter((g) => g.name); // 品物だけの区切り
+          continue;
+        }
+        const buildings = seg.slice(0, colon).split("/").map((s) => s.trim()).filter(Boolean);
+        const outputs = seg.slice(colon + 1).split(",").map(parseGoods).filter((g) => g.name);
+        if (!buildings.length) continue;
+
+        // 同じ建物を複数の行に分けて書いたときは、ひとつにまとめる
+        const key = buildings.join(" / ");
+        let step = steps.find((s) => s.key === key);
+        if (!step) steps.push((step = { key, buildings, inputs: [], outputs: [] }));
+        for (const g of carry || []) mergeGoods(step.inputs, g);
+        for (const g of outputs) mergeGoods(step.outputs, g);
+
+        carry = outputs.map((g) => ({ name: g.name, qty: "" })); // 品物を書かなければ、作ったものがそのまま次へ進む
+      }
+    }
+    return steps;
+  }
+
+  function chainHtml(title, rows) {
+    const steps = parseChain(rows);
+    if (!steps.length) return "";
+    chainSteps.push(...steps);
+
+    const makers = (name) => steps.filter((s) => s.outputs.some((g) => g.name === name));
+    const consumed = new Set(steps.flatMap((s) => s.inputs.map((g) => g.name)));
+    let goals = steps.filter((s) => !s.outputs.some((g) => consumed.has(g.name)));
+    if (!goals.length) goals = steps.slice(-1); // 循環していて終点が決まらないとき
+
+    const goodsRow = (kind, label, list, isMain) =>
+      list.length
+        ? `<div class="pc-row pc-${kind}"><span class="pc-kind">${label}</span><span class="pc-goods">` +
+          list
+            .map(
+              (g) =>
+                `<span class="pc-good${isMain(g) ? " pc-main" : ""}"><span>${esc(g.name)}</span>` +
+                (g.qty ? `<b>${esc(g.qty)}</b>` : "") +
+                "</span>",
+            )
+            .join("") +
+          "</span></div>"
+        : "";
+
+    // wanted: この建物の産物のうち、次の工程で使う品物（null は最終産物を作る建物）
+    const node = (step, wanted, path) => {
+      const branches = step.inputs
+        .map((g) => {
+          const from = makers(g.name).filter((s) => s !== step && !path.includes(s));
+          if (!from.length) return "";
+          const subs = from.map((s) => node(s, g.name, [...path, step]));
+          const inner =
+            subs.length > 1 ? `<div class="pc-alt"><span class="pc-alt-label">どれか</span>${subs.join("")}</div>` : subs[0];
+          return `<div class="pc-input">${inner}<span class="pc-line"></span></div>`;
+        })
+        .join("");
+      const card =
+        `<div class="pc-card${wanted === null ? " pc-goal" : ""}">` +
+        `<div class="pc-building">${step.buildings.map(esc).join("<small>または</small>")}</div>` +
+        goodsRow("out", "生産", step.outputs, (g) => wanted === null || g.name === wanted) +
+        goodsRow("in", "消費", step.inputs, () => true) +
+        "</div>";
+      return (
+        '<div class="pc-node">' +
+        (branches ? `<div class="pc-inputs">${branches}</div><span class="pc-arrow"></span>` : "") +
+        card +
+        "</div>"
+      );
+    };
+
+    const roots = goals.map((s) => node(s, null, []));
+    // 材料をたどれない建物だけを並べた図は、縦に積まずに横へ並べる
+    const flat = roots.length > 1 && roots.every((r) => !r.includes('class="pc-inputs"'));
+
+    return (
+      '<figure class="pc">' +
+      (title ? `<figcaption>${esc(title)}</figcaption>` : "") +
+      `<div class="pc-scroll${flat ? " pc-flat" : ""}">${roots.join("")}</div></figure>`
+    );
+  }
+
+  // 中身をMarkdownとして扱わず、行のまま受け取って図や表にするブロック
+  const RAW_BLOCKS = { infobox, chain: chainHtml };
+
   function preprocess(md) {
     const out = [];
     const stack = [];
     let fence = null; // コードブロック内は変換しない
-    let info = null; // infobox の行を収集中
+    let info = null; // RAW_BLOCKS の行を収集中
 
     for (const line of md.replace(/\r\n?/g, "\n").split("\n")) {
       if (info) {
         if (/^:::\s*$/.test(line)) {
-          out.push("", infobox(info.title, info.rows), "");
+          out.push("", info.render(info.title, info.rows), "");
           info = null;
         } else if (line.trim()) {
           info.rows.push(line.trim());
@@ -233,8 +355,10 @@
       }
 
       const m = /^:::\s*([a-z]+)\s*(.*)$/.exec(line);
-      if (m && m[1] === "infobox") {
-        info = { title: m[2].trim(), rows: [] };
+      if (m && RAW_BLOCKS[m[1]]) {
+        info = { render: RAW_BLOCKS[m[1]], title: m[2].trim(), rows: [] };
+      } else if (m && m[1] === "chainindex") {
+        out.push("", '<div data-wiki="goods"></div>', "");
       } else if (m && m[1] === "stub") {
         const extra = m[2].trim();
         out.push(
@@ -255,7 +379,7 @@
       }
     }
 
-    if (info) out.push("", infobox(info.title, info.rows), "");
+    if (info) out.push("", info.render(info.title, info.rows), "");
     while (stack.length) out.push("", stack.pop(), "");
     return out.join("\n");
   }
@@ -503,7 +627,36 @@
     );
   }
 
+  // 品物ごとに「作る建物」「使う建物」をまとめた表。ページ内の :::chain から作る
+  function goodsTable() {
+    const goods = new Map();
+    const entry = (name) => {
+      if (!goods.has(name)) goods.set(name, { makers: [], users: [] });
+      return goods.get(name);
+    };
+    const add = (list, key, qty) => {
+      const same = list.find((x) => x.key === key);
+      if (!same) list.push({ key, qty });
+      else if (!same.qty) same.qty = qty;
+    };
+    for (const step of chainSteps) {
+      for (const g of step.outputs) add(entry(g.name).makers, step.key, g.qty);
+      for (const g of step.inputs) add(entry(g.name).users, step.key, g.qty);
+    }
+    if (!goods.size) return h("p", null, "このページには生産チェーンがありません。");
+
+    const cell = (list) =>
+      h("td", null, list.length ? list.map((x, i) => [i ? h("br") : null, x.qty ? `${x.key}（${x.qty}）` : x.key]) : "—");
+    return h(
+      "table",
+      null,
+      h("thead", null, h("tr", null, ["品物", "作る建物", "使う建物"].map((t) => h("th", null, t)))),
+      h("tbody", null, [...goods].map(([name, e]) => h("tr", null, h("td", null, name), cell(e.makers), cell(e.users)))),
+    );
+  }
+
   function fillWidgets(article) {
+    for (const el of article.querySelectorAll('[data-wiki="goods"]')) el.replaceChildren(goodsTable());
     for (const el of article.querySelectorAll('[data-wiki="games"]')) el.replaceChildren(gamesTable());
     for (const el of article.querySelectorAll('[data-wiki="recent"]')) {
       el.replaceChildren(recentList(Number(el.dataset.limit) || 10));

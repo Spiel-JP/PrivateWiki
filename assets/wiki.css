@@ -747,6 +747,275 @@ details.spoiler > ol {
   font-weight: 700;
 }
 
+/* 生産チェーンの図（:::chain） */
+
+.pc {
+  --pc-line: var(--border);
+  margin: 1em 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.pc figcaption {
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.pc-scroll {
+  padding: 4px 2px 10px;
+  overflow-x: auto;
+}
+
+.pc-node {
+  display: flex;
+  align-items: center;
+}
+
+.pc-scroll > .pc-node {
+  width: max-content;
+}
+
+.pc-scroll > .pc-node + .pc-node {
+  margin-top: 16px;
+}
+
+/* 建物ひとつで作れる品物だけを並べた図は、横に並べて折り返す */
+.pc-flat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pc-scroll.pc-flat > .pc-node {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.pc-inputs {
+  display: flex;
+}
+
+.pc-input {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.pc-line,
+.pc-arrow,
+.pc-input::after {
+  background: var(--pc-line);
+}
+
+/* 材料が複数あるとき、枝どうしをつなぐ線 */
+.pc-input::after {
+  content: "";
+  position: absolute;
+}
+
+.pc-input:only-child::after {
+  display: none;
+}
+
+.pc-arrow {
+  position: relative;
+  flex: none;
+}
+
+.pc-arrow::after {
+  content: "";
+  position: absolute;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.pc-alt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 8px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+}
+
+.pc-alt-label {
+  color: var(--text-sub);
+  font-size: 11px;
+}
+
+.pc-card {
+  flex: none;
+  min-width: 112px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  white-space: nowrap;
+}
+
+.pc-building {
+  padding: 3px 10px;
+  background: var(--bg-header);
+  font-weight: 700;
+  text-align: center;
+}
+
+.pc-building small {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 400;
+  line-height: 1.2;
+  opacity: 0.75;
+}
+
+.pc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 10px;
+  border-top: 1px solid var(--border-light);
+}
+
+.pc-kind {
+  flex: none;
+  color: var(--text-sub);
+  font-size: 11px;
+}
+
+.pc-goods {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.pc-good {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pc-good b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* その図で先へ進まない産物（副産物）は控えめに出す */
+.pc-out .pc-good:not(.pc-main) {
+  color: var(--text-sub);
+}
+
+.pc-out .pc-main {
+  font-weight: 700;
+}
+
+.pc-goal {
+  border: 2px solid var(--note);
+}
+
+.pc-goal .pc-building {
+  background: var(--note);
+  color: var(--bg);
+}
+
+/* 広い画面: 左から右へ流す */
+@media (min-width: 700px) {
+  .pc-inputs {
+    flex-direction: column;
+  }
+
+  .pc-input {
+    padding: 6px 0;
+  }
+
+  .pc-line {
+    flex: 1;
+    min-width: 24px;
+    height: 2px;
+  }
+
+  .pc-input::after {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 2px;
+  }
+
+  .pc-input:first-child::after {
+    top: calc(50% - 1px);
+  }
+
+  .pc-input:last-child::after {
+    bottom: calc(50% - 1px);
+  }
+
+  .pc-arrow {
+    width: 18px;
+    height: 2px;
+    margin-right: 7px;
+  }
+
+  .pc-arrow::after {
+    top: 50%;
+    right: -7px;
+    border-width: 5px 0 5px 7px;
+    border-left-color: var(--pc-line);
+    transform: translateY(-50%);
+  }
+}
+
+/* 狭い画面: 上から下へ流す */
+@media (max-width: 699px) {
+  .pc-scroll > .pc-node {
+    min-width: 100%;
+  }
+
+  .pc-node,
+  .pc-input {
+    flex-direction: column;
+  }
+
+  .pc-input {
+    padding: 0 6px;
+  }
+
+  .pc-line {
+    flex: 1;
+    width: 2px;
+    min-height: 16px;
+  }
+
+  .pc-input::after {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+  }
+
+  .pc-input:first-child::after {
+    left: calc(50% - 1px);
+  }
+
+  .pc-input:last-child::after {
+    right: calc(50% - 1px);
+  }
+
+  .pc-arrow {
+    width: 2px;
+    height: 14px;
+    margin-bottom: 7px;
+  }
+
+  .pc-arrow::after {
+    bottom: -7px;
+    left: 50%;
+    border-width: 7px 5px 0;
+    border-top-color: var(--pc-line);
+    transform: translateX(-50%);
+  }
+
+  .pc-alt {
+    align-items: center;
+  }
+}
+
 /* チェックリスト */
 
 .body ul.task-list {
